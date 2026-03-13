@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar Portfolio</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --card:    #1a1d27;
+      --border:  #2a2d3a;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --muted2:  #8896b3;
+      --ok:      #22c55e;
+      --low:     #f59e0b;
+      --offline: #ef4444;
+      --ok-bg:   rgba(34,197,94,0.12);
+      --low-bg:  rgba(245,158,11,0.12);
+      --off-bg:  rgba(239,68,68,0.12);
+      --accent:  #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 3rem;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 0.3rem;
+    }
+
+    /* ── Fleet summary card ──────────────────────────── */
+    .fleet-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .fleet-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 300px; height: 200px;
+      border-radius: 50%;
+      filter: blur(70px);
+      opacity: 0.2;
+      pointer-events: none;
+      transition: background 0.5s;
+    }
+    .fleet-card.all-ok::before     { background: var(--ok); }
+    .fleet-card.has-issues::before { background: var(--low); }
+    .fleet-card.all-offline::before{ background: var(--offline); }
+
+    .fleet-total-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .fleet-total {
+      font-size: 3.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .fleet-total-unit { font-size: 1.1rem; color: var(--muted2); }
+    .fleet-total-label {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-top: -0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Status bar */
+    .status-bar-wrap {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .status-bar-label {
+      font-size: 0.75rem;
+      color: var(--muted2);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-pills {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-chip.ok      { background: var(--ok-bg);  color: var(--ok);      border: 1px solid rgba(34,197,94,0.25);  }
+    .status-chip.low     { background: var(--low-bg); color: var(--low);     border: 1px solid rgba(245,158,11,0.25); }
+    .status-chip.offline { background: var(--off-bg); color: var(--offline); border: 1px solid rgba(239,68,68,0.25);  }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+    .status-dot.ok      { background: var(--ok);      box-shadow: 0 0 6px var(--ok); }
+    .status-dot.low     { background: var(--low);     box-shadow: 0 0 6px var(--low); }
+    .status-dot.offline { background: var(--offline); box-shadow: 0 0 6px var(--offline); }
+
+    /* Alert banner — shows problem plants */
+    .alert-banner {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 0.75rem;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+    }
+    .alert-row.offline {
+      background: rgba(239,68,68,0.07);
+      border-color: rgba(239,68,68,0.2);
+    }
+    .alert-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .alert-dot.low     { background: var(--low);     box-shadow: 0 0 6px var(--low); }
+    .alert-dot.offline { background: var(--offline); box-shadow: 0 0 6px var(--offline); }
+    .alert-name  { font-weight: 600; flex: 1; }
+    .alert-detail{ color: var(--muted2); font-size: 0.72rem; }
+
+    /* ── Site cards grid ─────────────────────────────── */
+    .sites-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 480px) {
+      .sites-grid { grid-template-columns: 1fr; }
+    }
+
+    .site-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.1rem;
+      padding: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-card:hover { border-color: var(--muted2); transform: translateY(-2px); }
+    .site-card.ok     { border-color: rgba(34,197,94,0.3); }
+    .site-card.low    { border-color: rgba(245,158,11,0.3); }
+    .site-card.offline{ border-color: rgba(239,68,68,0.3); }
+
+    .site-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+    .site-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .site-indicator {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .site-indicator.ok      { background: var(--ok);      box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+    .site-indicator.low     { background: var(--low);     box-shadow: 0 0 8px rgba(245,158,11,0.6); }
+    .site-indicator.offline { background: var(--offline); box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+    .site-indicator.loading { background: var(--muted); }
+
+    .site-kwh {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .site-kwh-unit { font-size: 0.8rem; color: var(--muted2); margin-left: 0.2rem; }
+
+    .site-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.6rem;
+    }
+    .site-status-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .site-status-label.ok      { color: var(--ok); }
+    .site-status-label.low     { color: var(--low); }
+    .site-status-label.offline { color: var(--offline); }
+    .site-status-label.loading { color: var(--muted); }
+
+    .site-updated {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .site-error {
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer { color: var(--muted); font-size: 0.72rem; }
+    .refresh-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--muted2);
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .loading-pulse { animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Solar Portfolio</h1>
+    <p id="last-updated">Loading…</p>
+  </header>
+
+  <!-- Fleet summary -->
+  <div class="fleet-card" id="fleet-card">
+    <div class="fleet-total-row">
+      <span class="fleet-total loading-pulse" id="fleet-total">—</span>
+      <span class="fleet-total-unit">kWh</span>
+    </div>
+    <div class="fleet-total-label">Total Generation Today</div>
+
+    <div class="status-bar-wrap">
+      <span class="status-bar-label">Fleet Status</span>
+      <div class="status-pills" id="status-pills">
+        <span class="status-chip ok loading-pulse">Loading…</span>
+      </div>
+    </div>
+
+    <div class="alert-banner" id="alert-banner"></div>
+  </div>
+
+  <!-- Individual site cards -->
+  <div class="sites-grid" id="sites-grid"></div>
+
+  <div class="bottom">
+    <footer id="footer">Auto-refreshes every 5 min</footer>
+    <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+</div>
+<script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONFIGURATION — add / remove sites here
+  // Each site needs:
+  //   name:    display name
+  //   dataUrl: full URL to that site's data/processed.json on GitHub Pages
+  //   siteUrl: full URL to that site's dashboard (for click-through)
+  // ─────────────────────────────────────────────────────────────────────────
+  const SITES = [
+    {
+      name:    "Addo Spar",
+      dataUrl: "https://GenergyDashboard.github.io/Kirkwood-Sites---Addo-Spar/data/processed.json",
+      siteUrl: "https://GenergyDashboard.github.io/Kirkwood-Sites---Addo-Spar/",
+    },
+    {
+      name:    "Kirkwood FNB",
+      dataUrl: "https://GenergyDashboard.github.io/Kirkwood-Sites---Kirkwood-FNB/data/processed.json",
+      siteUrl: "https://GenergyDashboard.github.io/Kirkwood-Sites---Kirkwood-FNB/",
+    },
+    // Add more sites here:
+    // { name: "Site Name", dataUrl: "https://...", siteUrl: "https://..." },
+  ];
+
+  const STATUS_LABELS = {
+    ok:      "System OK",
+    low:     "Low Production",
+    offline: "Offline",
+    loading: "Loading…",
+    error:   "Unavailable",
+  };
+
+  let siteData = SITES.map(() => null);  // null = loading, false = error
+
+  async function fetchSite(site, index) {
+    try {
+      const res  = await fetch(site.dataUrl + "?t=" + Date.now());
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      siteData[index] = await res.json();
+    } catch (e) {
+      siteData[index] = false;
+    }
+  }
+
+  async function loadAll() {
+    siteData = SITES.map(() => null);
+    renderAll();  // show loading state
+
+    await Promise.all(SITES.map((site, i) => fetchSite(site, i)));
+    renderAll();
+  }
+
+  function renderAll() {
+    const now = new Date().toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("last-updated").textContent = "Updated " + now;
+
+    renderFleetSummary();
+    renderSiteCards();
+  }
+
+  function renderFleetSummary() {
+    const fleetCard   = document.getElementById("fleet-card");
+    const totalEl     = document.getElementById("fleet-total");
+    const pillsEl     = document.getElementById("status-pills");
+    const bannerEl    = document.getElementById("alert-banner");
+
+    // Tally statuses
+    let totalKwh  = 0;
+    let okCount   = 0;
+    let lowCount  = 0;
+    let offCount  = 0;
+    let loadCount = 0;
+    const problems = [];
+
+    SITES.forEach((site, i) => {
+      const d = siteData[i];
+      if (d === null) { loadCount++; return; }
+      if (d === false) { offCount++; problems.push({ name: site.name, status: "offline", detail: "Could not load data" }); return; }
+
+      totalKwh += d.total_kwh || 0;
+      const status = d.status || "offline";
+      if (status === "ok")           okCount++;
+      else if (status === "low")   { lowCount++; problems.push({ name: site.name, status: "low",     detail: `${(d.total_kwh||0).toFixed(1)} kWh today` }); }
+      else                         { offCount++; problems.push({ name: site.name, status: "offline", detail: `Last seen: ${d.last_updated || "unknown"}` }); }
+    });
+
+    // Fleet card glow
+    fleetCard.className = "fleet-card " +
+      (offCount > 0 ? "all-offline" : lowCount > 0 ? "has-issues" : "all-ok");
+
+    // Total
+    totalEl.textContent = totalKwh.toFixed(1);
+    totalEl.classList.remove("loading-pulse");
+
+    // Status pills
+    pillsEl.innerHTML = "";
+    if (loadCount > 0) {
+      pillsEl.innerHTML = `<span class="status-chip ok loading-pulse">Loading…</span>`;
+    } else {
+      if (okCount > 0) {
+        pillsEl.innerHTML += `
+          <span class="status-chip ok">
+            <span class="status-dot ok"></span>
+            ${okCount} OK
+          </span>`;
+      }
+      if (lowCount > 0) {
+        pillsEl.innerHTML += `
+          <span class="status-chip low">
+            <span class="status-dot low"></span>
+            ${lowCount} Low
+          </span>`;
+      }
+      if (offCount > 0) {
+        pillsEl.innerHTML += `
+          <span class="status-chip offline">
+            <span class="status-dot offline"></span>
+            ${offCount} Offline
+          </span>`;
+      }
+    }
+
+    // Alert banner for problem sites
+    bannerEl.innerHTML = "";
+    problems.forEach(p => {
+      bannerEl.innerHTML += `
+        <div class="alert-row ${p.status}">
+          <span class="alert-dot ${p.status}"></span>
+          <span class="alert-name">${p.name}</span>
+          <span class="alert-detail">${STATUS_LABELS[p.status]} · ${p.detail}</span>
+        </div>`;
+    });
+  }
+
+  function renderSiteCards() {
+    const grid = document.getElementById("sites-grid");
+    grid.innerHTML = "";
+
+    SITES.forEach((site, i) => {
+      const d      = siteData[i];
+      const status = d === null ? "loading" : d === false ? "offline" : (d.status || "offline");
+      const kwh    = d && d !== false ? (d.total_kwh || 0).toFixed(1) : "—";
+      const updated = d && d !== false ? (d.last_updated || "") : "";
+
+      const card = document.createElement("a");
+      card.href      = site.siteUrl;
+      card.target    = "_blank";
+      card.className = `site-card ${status}`;
+
+      card.innerHTML = `
+        <div class="site-card-header">
+          <span class="site-name">${site.name}</span>
+          <span class="site-indicator ${status}"></span>
+        </div>
+        ${d === null ? `<div class="site-kwh loading-pulse">—</div>` : ""}
+        ${d === false ? `<div class="site-error">Could not load data</div>` : ""}
+        ${d && d !== false ? `
+          <div>
+            <span class="site-kwh">${kwh}</span>
+            <span class="site-kwh-unit">kWh</span>
+          </div>
+        ` : ""}
+        <div class="site-meta">
+          <span class="site-status-label ${status}">${STATUS_LABELS[status] || status}</span>
+          <span class="site-updated">${updated}</span>
+        </div>`;
+
+      grid.appendChild(card);
+    });
+  }
+
+  // Load on start, refresh every 5 minutes
+  loadAll();
+  setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>
