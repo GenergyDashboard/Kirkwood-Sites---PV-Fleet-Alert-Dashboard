@@ -314,7 +314,7 @@
   <div class="sites-grid" id="sites-grid"></div>
 
   <div class="bottom">
-    <footer id="footer">Auto-refreshes every 5 min</footer>
+    <footer id="footer">Auto-refreshes every hour</footer>
     <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
   </div>
 
@@ -491,7 +491,7 @@
 
   // Load on start, refresh every 5 minutes
   loadAll();
-  setInterval(loadAll, 5 * 60 * 1000);
+  setInterval(loadAll, 60 * 60 * 1000);
 </script>
 </body>
 </html>
